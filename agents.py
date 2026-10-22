@@ -36,16 +36,29 @@ def bfs(campus, start, goal):
 
 
 def manhattan(state, goal):
-    """TODO 1: Return Manhattan distance between two (row, column) tuples."""
-    # Add the absolute row difference and the absolute column difference.
-    raise NotImplementedError("Complete TODO 1: manhattan")
+    return abs(state[0] - goal[0]) + abs(state[1] - goal[1])
 
 
 def astar(campus, start, goal):
-    """TODO 2: Return SearchResult(path, expanded) for A* graph search."""
-    # Use heapq as a priority queue and manhattan() as the heuristic.
-    # Track best known g-costs and parent states in dictionaries.
-    raise NotImplementedError("Complete TODO 2: astar")
+    frontier = []
+    heapq.heappush(frontier, (manhattan(start, goal), 0, start))
+    parents = {start: None}
+    g_costs = {start: 0} # g_costs[state] = cost to reach state from start
+    expanded = 0
+    while frontier: # while anything is in the frontier
+        f_cost, g_cost, state = heapq.heappop(frontier) #pop the state with the lowest predicted cost
+        if state == goal:
+            return SearchResult(reconstruct_path(parents, goal), expanded) # if we reached the goal, return the path and number of expanded nodes
+        expanded += 1 # else, we expand the node and add its neighbors to the frontier
+        for action, successor in campus.neighbors(state):
+            new_g_cost = g_cost + 1
+            insertion_number = next(count()) # tie-breaker for nodes with the same f_cost
+            if successor not in g_costs or new_g_cost < g_costs[successor]: #only add the successor to the frontier if we haven't seen it before or if we found a cheaper path to it
+                g_costs[successor] = new_g_cost
+                parents[successor] = state
+                f_cost = new_g_cost + manhattan(successor, goal)
+                heapq.heappush(frontier, (f_cost, insertion_number, successor)) # add the successor to the frontier with its f_cost and insertion number
+    return SearchResult(None, expanded) # if we exhaust the frontier without finding the goal, return None and the number of expanded nodes
 
 
 def epsilon_greedy(q_values, state, actions, epsilon, rng):
