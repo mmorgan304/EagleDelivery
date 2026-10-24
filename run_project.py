@@ -18,13 +18,18 @@ def write_csv(filename, rows):
 
 def plot_training_steps(training_runs, filename, start_name, goal_name):
     figure, axis = plt.subplots()
+    reward_axis = axis.twinx()
     for seed, records in training_runs:
-        axis.plot([row["episode"] for row in records],
-                  [row["steps"] for row in records],
+        episodes = [row["episode"] for row in records]
+        axis.plot(episodes, [row["steps"] for row in records],
                   label="Seed " + str(seed))
     episode_numbers = [row["episode"] for row in training_runs[0][1]]
     mean_steps = [
         statistics.mean(records[index]["steps"] for _, records in training_runs)
+        for index in range(len(episode_numbers))
+    ]
+    mean_rewards = [
+        statistics.mean(records[index]["return"] for _, records in training_runs)
         for index in range(len(episode_numbers))
     ]
     window_size = 10
@@ -35,13 +40,27 @@ def plot_training_steps(training_runs, filename, start_name, goal_name):
         ]
         axis.plot(episode_numbers[window_size - 1:], smoothed_steps,
                   linewidth=2.5, label="10-episode average (all seeds)")
+        smoothed_rewards = [
+            statistics.mean(mean_rewards[index - window_size + 1:index + 1])
+            for index in range(window_size - 1, len(mean_rewards))
+        ]
+        reward_line, = reward_axis.plot(
+            episode_numbers[window_size - 1:], smoothed_rewards,
+            color="purple", linewidth=2.5,
+            label="10-episode average reward (all seeds)")
     axis.set_xlabel("Episode #")
     axis.set_ylabel("Number of steps")
-    axis.set_title("Training Steps per Episode: " + start_name + " to " +
+    reward_axis.set_ylabel("Episode reward")
+    axis.set_title("Training Steps and Reward per Episode: " + start_name + " to " +
                    goal_name)
     axis.set_ylim(bottom=0)
+    reward_axis.invert_yaxis()
     axis.grid(True, alpha=0.3)
-    axis.legend()
+    lines, labels = axis.get_legend_handles_labels()
+    if len(mean_steps) >= window_size:
+        lines.append(reward_line)
+        labels.append(reward_line.get_label())
+    axis.legend(lines, labels)
     figure.tight_layout()
     figure.savefig(filename)
     plt.close(figure)

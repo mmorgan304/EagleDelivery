@@ -52,6 +52,8 @@ python3 run_project.py train --start S --goal W --output results/baseline_SW
 ```
 
 Training saves a `training_steps.png` plot in the output directory, with episode
-number on the x-axis and steps per episode on the y-axis. Each training seed is
-shown as a separate line, along with a 10-episode rolling average across all
-seeds. The plot title includes the start and goal building names.
+number on the x-axis, steps per episode on the regular left y-axis, and the
+10-episode rolling average reward across all seeds on the inverted right y-axis.
+Each training seed is shown as a separate steps line, along with a 10-episode
+rolling average of steps across all seeds. The reward average is solid purple.
+The plot title includes the start and goal building names.
