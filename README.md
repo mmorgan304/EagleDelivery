@@ -6,6 +6,12 @@ This is our project 1 that focuses on search and reinforcement learning. Edit th
 
 Use Python 3.9+.
 
+Install the plotting dependency with:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
 ## What already works
 
 ```bash
@@ -44,3 +50,8 @@ python3 -m unittest tests.test_student.LearningTests -v
 python3 -m unittest discover -v
 python3 run_project.py train --start S --goal W --output results/baseline_SW
 ```
+
+Training saves a `training_steps.png` plot in the output directory, with episode
+number on the x-axis and steps per episode on the y-axis. Each training seed is
+shown as a separate line, along with a 10-episode rolling average across all
+seeds. The plot title includes the start and goal building names.

@@ -5,6 +5,7 @@ import random
 import statistics
 
 import agents
+import matplotlib.pyplot as plt
 from campus import ACTIONS, BUILDING_NAMES, CampusMap, DeliveryEnvironment
 
 
@@ -13,6 +14,38 @@ def write_csv(filename, rows):
         writer = csv.DictWriter(destination, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def plot_training_steps(training_runs, filename, start_name, goal_name):
+    figure, axis = plt.subplots()
+    for seed, records in training_runs:
+        axis.plot([row["episode"] for row in records],
+                  [row["steps"] for row in records],
+                  label="Seed " + str(seed))
+    episode_numbers = [row["episode"] for row in training_runs[0][1]]
+    mean_steps = [
+        statistics.mean(records[index]["steps"] for _, records in training_runs)
+        for index in range(len(episode_numbers))
+    ]
+    window_size = 10
+    if len(mean_steps) >= window_size:
+        smoothed_steps = [
+            statistics.mean(mean_steps[index - window_size + 1:index + 1])
+            for index in range(window_size - 1, len(mean_steps))
+        ]
+        axis.plot(episode_numbers[window_size - 1:], smoothed_steps,
+                  linewidth=2.5, label="10-episode average (all seeds)")
+    axis.set_xlabel("Episode #")
+    axis.set_ylabel("Number of steps")
+    axis.set_title("Training Steps per Episode: " + start_name + " to " +
+                   goal_name)
+    axis.set_ylim(bottom=0)
+    axis.grid(True, alpha=0.3)
+    axis.legend()
+    figure.tight_layout()
+    figure.savefig(filename)
+    plt.close(figure)
+
 
 # Run complete evaluation trials
 def evaluate(environment, choose_action, episodes, max_steps):
@@ -156,10 +189,12 @@ def main():
         raise ValueError("Output directory already has CSV files. Choose a new name.")
     output.mkdir(parents=True, exist_ok=True)
     summaries = []
+    training_runs = []
     for seed in args.seeds:
         training, evaluation = train_once(campus, start, goal, args, seed)
         write_csv(output / ("training_seed" + str(seed) + ".csv"), training)
         write_csv(output / ("evaluation_seed" + str(seed) + ".csv"), evaluation)
+        training_runs.append((seed, training))
         row = {"map": campus.filename, "start": args.start, "goal": args.goal,
                "seed": seed, "episodes": args.episodes,
                "eval_episodes": args.eval_episodes, "max_steps": args.max_steps,
@@ -169,7 +204,11 @@ def main():
         summaries.append(row)
         print("Seed", seed, "evaluation:", summarize(evaluation))
     write_csv(output / "summary.csv", summaries)
+    plot_path = output / "training_steps.png"
+    plot_training_steps(training_runs, plot_path, BUILDING_NAMES[args.start],
+                        BUILDING_NAMES[args.goal])
     print("Saved CSV files to", output)
+    print("Saved training steps plot to", plot_path)
     print("Mean success rate across seeds:",
           statistics.mean(row["success_rate"] for row in summaries))
     print("Mean evaluation return across seeds:",
